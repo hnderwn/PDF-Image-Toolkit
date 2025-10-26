@@ -1,892 +1,1344 @@
 <!DOCTYPE html>
 <html lang="id" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF & Image Toolkit</title>
-
+    
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- 2. Libraries (pdf.js, jsPDF, JSZip) -->
+    
+    <!-- 2. Libraries (pdf.js, jsPDF, JSZip, pdf-lib) -->
     <!-- pdf.js (Reading/Rendering PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js"></script>
-
+    
     <!-- jsPDF (Creating PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-
+    
     <!-- JSZip (Creating ZIP for multiple images) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-
+    
+    <!-- pdf-lib (Editing/Merging/Splitting PDF) -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    
     <!-- 3. Custom Font & Styles -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #111827; /* bg-gray-900 */
-        color: #f3f4f6; /* text-gray-100 */
-      }
-
-      /* Custom file input button */
-      input[type='file']::file-selector-button {
-        @apply bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer hover:bg-blue-700 transition duration-200 mr-4;
-      }
-
-      /* Loading Spinner */
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+            color: #f3f4f6; /* text-gray-100 */
         }
-      }
-      .spinner {
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top-color: #3b82f6; /* blue-500 */
-        border-radius: 50%;
-        width: 2rem;
-        height: 2rem;
-        animation: spin 1s linear infinite;
-      }
+        
+        /* Custom file input button */
+        input[type="file"]::file-selector-button {
+            @apply bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer hover:bg-blue-700 transition duration-200 mr-4;
+        }
 
-      /* Drag-over effect */
-      .drag-over {
-        @apply border-4 border-dashed border-blue-500 bg-gray-800;
-      }
+        /* Loading Spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Drag-over effect */
+        .drag-over {
+            @apply border-4 border-dashed border-blue-500 bg-gray-800;
+        }
     </style>
-  </head>
-  <body class="min-h-screen antialiased">
+</head>
+<body class="min-h-screen antialiased">
+
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
-      <!-- Header -->
-      <header class="text-center mb-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">PDF & Image Toolkit</h1>
-        <p class="text-gray-400 mt-2">100% Client-Side. File lu aman, gak di-upload kemana-mana.</p>
-      </header>
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                PDF & Image Toolkit
+            </h1>
+            <p class="text-gray-400 mt-2">100% Client-Side. File lu aman, gak di-upload kemana-mana.</p>
+        </header>
 
-      <!-- Tab Navigation -->
-      <nav class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
-        <button data-tab="img-to-pdf" class="tab-button active-tab bg-blue-600 text-white py-2 px-4 rounded-lg font-medium">Image → PDF</button>
-        <button data-tab="pdf-to-img" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">PDF → Image</button>
-        <button data-tab="pdf-to-long-img" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">PDF → Long Image</button>
-        <button data-tab="merge-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Merge PDF</button>
-        <button data-tab="split-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Split PDF</button>
-        <button data-tab="compress-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Compress PDF</button>
-      </nav>
+        <!-- Tab Navigation -->
+        <nav class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+            <button data-tab="img-to-pdf" class="tab-button active-tab bg-blue-600 text-white py-2 px-4 rounded-lg font-medium">Image → PDF</button>
+            <button data-tab="pdf-to-img" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">PDF → Image</button>
+            <button data-tab="pdf-to-long-img" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">PDF → Long Image</button>
+            <button data-tab="merge-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Merge PDF</button>
+            <button data-tab="split-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Split PDF</button>
+            <button data-tab="compress-pdf" class="tab-button bg-gray-700 text-gray-300 py-2 px-4 rounded-lg font-medium">Compress PDF</button>
+        </nav>
 
-      <!-- Main Content Area -->
-      <main id="content-panels">
-        <!-- Panel 1: Image -> PDF (FIXED) -->
-        <div data-panel="img-to-pdf" class="tab-panel">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">Konversi Gambar ke PDF</h2>
-            <p class="text-gray-400 mb-6">Upload satu atau beberapa gambar (JPG/PNG). Lu bisa atur urutannya nanti (Soon™).</p>
+        <!-- Main Content Area -->
+        <main id="content-panels">
+            
+            <!-- Panel 1: Image -> PDF -->
+            <div data-panel="img-to-pdf" class="tab-panel">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Konversi Gambar ke PDF</h2>
+                    <p class="text-gray-400 mb-6">Upload satu atau beberapa gambar (JPG/PNG).</p>
+                    
+                    <!-- File Drop Area -->
+                    <label for="img-input" id="img-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="font-medium">Drag & Drop gambar lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="img-input" multiple accept="image/jpeg, image/png" class="hidden">
+                    </label>
 
-            <!-- File Drop Area -->
-            <label
-              for="img-input"
-              id="img-drop-area"
-              class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span class="font-medium">Drag & Drop gambar lu di sini, atau klik buat milih file</span>
-              <input type="file" id="img-input" multiple accept="image/jpeg, image/png" class="hidden" />
-            </label>
+                    <!-- Image Preview & Order -->
+                    <div id="img-preview-area" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <!-- Thumbnails akan muncul di sini -->
+                    </div>
 
-            <!-- Image Preview & Order (UPDATED) -->
-            <div id="img-preview-area" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              <!-- Thumbnails akan muncul di sini (sekarang dengan tombol hapus) -->
+                    <!-- Options -->
+                    <div class="grid md:grid-cols-3 gap-6 mt-6">
+                        <div>
+                            <label for="img-page-size" class="block text-sm font-medium text-gray-300 mb-2">Ukuran Kertas</label>
+                            <select id="img-page-size" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="a4">A4 (Fit)</option>
+                                <option value="original">Ukuran Asli Gambar</option>
+                                <option value="a3">A3 (Fit)</option>
+                                <option value="a5">A5 (Fit)</option>
+                                <option value="letter">Letter (Fit)</option>
+                                <option value="legal">Legal (Fit)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="img-orientation" class="block text-sm font-medium text-gray-300 mb-2">Orientasi Halaman</label>
+                            <select id="img-orientation" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white transition-opacity">
+                                <option value="p">Portrait</option>
+                                <option value="l">Landscape</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="img-quality" class="block text-sm font-medium text-gray-300 mb-2">Kualitas Kompresi (1-100)</label>
+                            <input type="number" id="img-quality" value="80" min="1" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
+
+                    <!-- Output Filename Input -->
+                    <div class="mt-6">
+                        <label for="img-output-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                        <input type="text" id="img-output-filename" placeholder="hasil_konversi" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix">
+                        <p class="text-xs text-gray-400 mt-1" id="filename-suffix">.pdf akan ditambahkan otomatis</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="convert-to-pdf-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Konversi ke PDF
+                    </button>
+                </div>
             </div>
 
-            <!-- Options (UPDATED) -->
-            <div class="grid md:grid-cols-3 gap-6 mt-6">
-              <div>
-                <label for="img-page-size" class="block text-sm font-medium text-gray-300 mb-2">Ukuran Kertas</label>
-                <select id="img-page-size" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                  <option value="a4">A4 (Fit)</option>
-                  <option value="original">Ukuran Asli Gambar</option>
-                  <option value="a3">A3 (Fit)</option>
-                  <option value="a5">A5 (Fit)</option>
-                  <option value="letter">Letter (Fit)</option>
-                  <option value="legal">Legal (Fit)</option>
-                </select>
-              </div>
-              <div>
-                <label for="img-orientation" class="block text-sm font-medium text-gray-300 mb-2">Orientasi Halaman</label>
-                <select id="img-orientation" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white transition-opacity">
-                  <option value="p">Portrait</option>
-                  <option value="l">Landscape</option>
-                </select>
-              </div>
-              <div>
-                <label for="img-quality" class="block text-sm font-medium text-gray-300 mb-2">Kualitas Kompresi (1-100)</label>
-                <input type="number" id="img-quality" value="80" min="1" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" />
-              </div>
+            <!-- Panel 2: PDF -> Image -->
+            <div data-panel="pdf-to-img" class="tab-panel hidden">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Konversi PDF ke Image (Per Halaman)</h2>
+                    <p class="text-gray-400 mb-6">Upload file PDF. Setiap halaman akan jadi file gambar terpisah.</p>
+                    
+                    <!-- File Drop Area -->
+                    <label for="pdf-to-img-input" id="pdf-to-img-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="pdf-to-img-input" accept="application/pdf" class="hidden">
+                    </label>
+                    <!-- Filename display with clear button -->
+                    <div class="text-center text-gray-300 mt-4 h-6">
+                        <p id="pdf-to-img-filename-display" class="inline font-medium"></p>
+                        <button id="pdf-to-img-clear-btn" class="hidden text-red-400 hover:text-red-300 transition duration-150 ml-2 font-bold" title="Hapus file">&times;</button>
+                    </div>
+
+
+                    <!-- Options -->
+                    <div class="grid md:grid-cols-3 gap-6 mt-6">
+                        <div>
+                            <label for="pdf-to-img-format" class="block text-sm font-medium text-gray-300 mb-2">Format Gambar</label>
+                            <select id="pdf-to-img-format" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="image/png">PNG</option>
+                                <option value="image/jpeg">JPG</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="pdf-to-img-pages" class="block text-sm font-medium text-gray-300 mb-2">Halaman (cth: 1-3, 5, 8-10)</label>
+                            <input type="text" id="pdf-to-img-pages" placeholder="Semua halaman" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div class="flex items-end pb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" id="pdf-to-img-zip" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-blue-500 rounded focus:ring-blue-400" checked>
+                                <span class="text-gray-300">Simpan sebagai ZIP</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Output Filename Input -->
+                    <div class="mt-6">
+                        <label for="pdf-to-img-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                        <input type="text" id="pdf-to-img-filename" placeholder="hasil_konversi" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix-img">
+                        <p class="text-xs text-gray-400 mt-1" id="filename-suffix-img">.zip atau .png/.jpg akan ditambahkan otomatis</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="convert-to-img-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Konversi ke Image
+                    </button>
+                </div>
             </div>
 
-            <!-- (FIXED) Output Filename Input -->
-            <div class="mt-6">
-              <label for="img-output-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
-              <input type="text" id="img-output-filename" placeholder="hasil_konversi" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix" />
-              <p class="text-xs text-gray-400 mt-1" id="filename-suffix">.pdf akan ditambahkan otomatis</p>
+            <!-- Panel 3: PDF -> Long Image -->
+            <div data-panel="pdf-to-long-img" class="tab-panel hidden">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Konversi PDF ke Long Image</h2>
+                    <p class="text-gray-400 mb-6">Gabung semua halaman PDF jadi satu gambar panjang ke bawah.</p>
+                    
+                     <!-- File Drop Area -->
+                     <label for="pdf-to-long-img-input" id="pdf-to-long-img-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="pdf-to-long-img-input" accept="application/pdf" class="hidden">
+                    </label>
+                    <!-- Filename display with clear button -->
+                    <div class="text-center text-gray-300 mt-4 h-6">
+                        <p id="pdf-to-long-img-filename-display" class="inline font-medium"></p>
+                        <button id="pdf-to-long-img-clear-btn" class="hidden text-red-400 hover:text-red-300 transition duration-150 ml-2 font-bold" title="Hapus file">&times;</button>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="grid md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="long-img-format" class="block text-sm font-medium text-gray-300 mb-2">Format Gambar</label>
+                            <select id="long-img-format" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="image/png">PNG</option>
+                                <option value="image/jpeg">JPG (Kualitas 0.9)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="long-img-scale" class="block text-sm font-medium text-gray-300 mb-2">Resolusi/Skala (cth: 1.5)</label>
+                            <input type="number" id="long-img-scale" value="1.5" min="0.5" max="5" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
+
+                    <!-- Output Filename Input -->
+                    <div class="mt-6">
+                        <label for="long-img-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                        <input type="text" id="long-img-filename" placeholder="hasil_konversi_panjang" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix-long-img">
+                        <p class="text-xs text-gray-400 mt-1" id="filename-suffix-long-img">.png/.jpg akan ditambahkan otomatis</p>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="convert-to-long-img-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Konversi ke Long Image
+                    </button>
+                </div>
             </div>
 
-            <!-- (FIXED) Action Button -->
-            <button id="convert-to-pdf-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-              Konversi ke PDF
-            </button>
-          </div>
-        </div>
+            <!-- Panel 4: Merge PDF -->
+            <div data-panel="merge-pdf" class="tab-panel hidden">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Gabungkan PDF (Merge)</h2>
+                    <p class="text-gray-400 mb-6">Upload dua atau lebih file PDF.</p>
+                    
+                    <!-- File Drop Area -->
+                    <label for="merge-input" id="merge-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                        <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="merge-input" multiple accept="application/pdf" class="hidden">
+                    </label>
 
-        <!-- Panel 2: PDF -> Image -->
-        <div data-panel="pdf-to-img" class="tab-panel hidden">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">Konversi PDF ke Image (Per Halaman)</h2>
-            <p class="text-gray-400 mb-6">Upload file PDF. Setiap halaman akan jadi file gambar terpisah.</p>
+                    <!-- PDF File List -->
+                    <div id="merge-preview-area" class="mt-6 space-y-3">
+                        <!-- Daftar file PDF akan muncul di sini -->
+                    </div>
 
-            <!-- (UPDATED) File Drop Area -->
-            <label
-              for="pdf-to-img-input"
-              id="pdf-to-img-drop-area"
-              class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
-              <input type="file" id="pdf-to-img-input" accept="application/pdf" class="hidden" />
-            </label>
-            <p id="pdf-to-img-filename-display" class="text-center text-gray-300 mt-4 hidden font-medium"></p>
-            <!-- (NEW) Filename display -->
+                    <!-- Output Filename Input -->
+                    <div class="mt-6">
+                        <label for="merge-output-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                        <input type="text" id="merge-output-filename" placeholder="hasil_gabungan" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix-merge">
+                        <p class="text-xs text-gray-400 mt-1" id="filename-suffix-merge">.pdf akan ditambahkan otomatis</p>
+                    </div>
 
-            <!-- Options -->
-            <div class="grid md:grid-cols-3 gap-6 mt-6">
-              <div>
-                <label for="pdf-to-img-format" class="block text-sm font-medium text-gray-300 mb-2">Format Gambar</label>
-                <select id="pdf-to-img-format" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                  <option value="image/png">PNG</option>
-                  <option value="image/jpeg">JPG</option>
-                </select>
-              </div>
-              <div>
-                <label for="pdf-to-img-pages" class="block text-sm font-medium text-gray-300 mb-2">Halaman (cth: 1-3, 5, 8-10)</label>
-                <input type="text" id="pdf-to-img-pages" placeholder="Semua halaman" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" />
-              </div>
-              <div class="flex items-end pb-2">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" id="pdf-to-img-zip" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-blue-500 rounded focus:ring-blue-400" checked />
-                  <span class="text-gray-300">Simpan sebagai ZIP</span>
-                </label>
-              </div>
+                    <!-- Action Button -->
+                    <button id="merge-pdf-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Gabungkan PDF
+                    </button>
+                </div>
             </div>
 
-            <!-- (NEW) Output Filename Input -->
-            <div class="mt-6">
-              <label for="pdf-to-img-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
-              <input type="text" id="pdf-to-img-filename" placeholder="hasil_konversi" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix-img" />
-              <p class="text-xs text-gray-400 mt-1" id="filename-suffix-img">.zip atau .png/.jpg akan ditambahkan otomatis</p>
+            <!-- Panel 5: Split PDF -->
+            <div data-panel="split-pdf" class="tab-panel hidden">
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Pisahkan PDF (Split)</h2>
+                    <p class="text-gray-400 mb-6">Upload satu file PDF dan pilih halaman mana aja yang mau lu ambil.</p>
+                    
+                    <!-- File Drop Area -->
+                    <label for="split-input" id="split-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="split-input" accept="application/pdf" class="hidden">
+                    </label>
+                    <!-- Filename display with clear button -->
+                    <div class="text-center text-gray-300 mt-4 h-6">
+                        <p id="split-filename-display" class="inline font-medium"></p>
+                        <button id="split-clear-btn" class="hidden text-red-400 hover:text-red-300 transition duration-150 ml-2 font-bold" title="Hapus file">&times;</button>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="grid md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="split-pages" class="block text-sm font-medium text-gray-300 mb-2">Halaman (cth: 1-3, 5, 8-10)</label>
+                            <input type="text" id="split-pages" placeholder="cth: 1-5" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                             <label for="split-output-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                            <input type="text" id="split-output-filename" placeholder="hasil_split" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="split-pdf-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Split PDF
+                    </button>
+                </div>
             </div>
+             
+             <!-- Panel 6: Compress PDF (UPDATED: Added Custom Controls) -->
+             <div data-panel="compress-pdf" class="tab-panel hidden">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4">Kompres PDF (Cetak Ulang)</h2>
+                    <p class="text-gray-400 mb-6">Upload file PDF. Metode ini akan "mencetak ulang" PDF lu jadi gambar untuk kompresi.</p>
+                    
+                    <!-- File Drop Area -->
+                    <label for="compress-input" id="compress-drop-area" class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
+                        <input type="file" id="compress-input" accept="application/pdf" class="hidden">
+                    </label>
+                    <!-- Filename display with clear button -->
+                    <div class="text-center text-gray-300 mt-4 h-6">
+                        <p id="compress-filename-display" class="inline font-medium"></p>
+                        <button id="compress-clear-btn" class="hidden text-red-400 hover:text-red-300 transition duration-150 ml-2 font-bold" title="Hapus file">&times;</button>
+                    </div>
 
-            <!-- Action Button -->
-            <button id="convert-to-img-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-              Konversi ke Image
-            </button>
-          </div>
-        </div>
+                    <!-- Disclaimer -->
+                    <div class="mt-6 p-4 bg-yellow-900 border border-yellow-700 rounded-lg text-yellow-200 space-y-2">
+                        <p class="font-bold">PERHATIAN:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li>Metode ini mengubah teks jadi gambar (tidak bisa di-copy-paste).</li>
+                            <li>Metode ini <span class="font-bold">HANYA EFEKTIF</span> untuk PDF hasil scan (yang isinya gambar).</li>
+                            <li>Jika PDF lu isinya teks, ukuran file hasil kompresi bisa jadi <span class="font-bold">MALAH LEBIH BESAR</span>.</li>
+                        </ul>
+                    </div>
 
-        <!-- Panel 3: PDF -> Long Image (UPDATED) -->
-        <div data-panel="pdf-to-long-img" class="tab-panel hidden">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">Konversi PDF ke Long Image</h2>
-            <p class="text-gray-400 mb-6">Gabung semua halaman PDF jadi satu gambar panjang ke bawah.</p>
+                    <!-- Options -->
+                    <div class="grid md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="compress-quality" class="block text-sm font-medium text-gray-300 mb-2">Kualitas Kompresi</label>
+                            <select id="compress-quality" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option value="low" selected>Low (File terkecil, ~58 DPI)</option>
+                                <option value="medium">Medium (Balance, ~72 DPI)</option>
+                                <option value="high">High (Kualitas baik, ~100 DPI)</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label for="compress-output-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
+                            <input type="text" id="compress-output-filename" placeholder="hasil_kompresi" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
+                    
+                    <!-- (NEW) Custom Settings Panel -->
+                    <div id="compress-custom-settings" class="hidden grid md:grid-cols-2 gap-6 mt-6 p-4 bg-gray-700 rounded-lg">
+                        <div>
+                            <label for="compress-scale" class="block text-sm font-medium text-gray-300 mb-2">Skala Resolusi (cth: 0.8)</label>
+                            <input type="number" id="compress-scale" value="0.8" min="0.1" max="5" step="0.1" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label for="compress-jpg-quality" class="block text-sm font-medium text-gray-300 mb-2">Kualitas JPG (1-100)</label>
+                            <input type="number" id="compress-jpg-quality" value="50" min="1" max="100" step="5" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        </div>
+                    </div>
 
-            <!-- (UPDATED) File Drop Area -->
-            <label
-              for="pdf-to-long-img-input"
-              id="pdf-to-long-img-drop-area"
-              class="w-full h-40 border-2 border-dashed border-gray-600 rounded-lg flex flex-col justify-center items-center text-gray-400 cursor-pointer hover:border-blue-500 transition duration-200"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span class="font-medium">Drag & Drop file PDF lu di sini, atau klik buat milih file</span>
-              <input type="file" id="pdf-to-long-img-input" accept="application/pdf" class="hidden" />
-            </label>
-            <p id="pdf-to-long-img-filename-display" class="text-center text-gray-300 mt-4 hidden font-medium"></p>
-            <!-- (NEW) Filename display -->
 
-            <!-- Options -->
-            <div class="grid md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <label for="long-img-format" class="block text-sm font-medium text-gray-300 mb-2">Format Gambar</label>
-                <select id="long-img-format" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                  <option value="image/png">PNG</option>
-                  <option value="image/jpeg">JPG (Kualitas 0.9)</option>
-                </select>
-              </div>
-              <div>
-                <label for="long-img-scale" class="block text-sm font-medium text-gray-300 mb-2">Resolusi/Skala (cth: 1.5)</label>
-                <input type="number" id="long-img-scale" value="1.5" min="0.5" max="5" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" />
-              </div>
+                    <!-- Action Button -->
+                    <button id="compress-pdf-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Kompres PDF
+                    </button>
+                </div>
+             </div>
+
+        </main>
+
+        <!-- Global Status/Loading Area -->
+        <footer id="status-area" class="text-center mt-8 p-4 min-h-[80px]">
+            <div id="loading-indicator" class="hidden flex-col justify-center items-center">
+                <div class="spinner"></div>
+                <p id="loading-text" class="text-gray-300 mt-3 text-sm">Lagi proses, sabar ya...</p>
             </div>
-
-            <!-- (NEW) Output Filename Input -->
-            <div class="mt-6">
-              <label for="long-img-filename" class="block text-sm font-medium text-gray-300 mb-2">Nama File Output (Opsional)</label>
-              <input type="text" id="long-img-filename" placeholder="hasil_konversi_panjang" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" aria-describedby="filename-suffix-long-img" />
-              <p class="text-xs text-gray-400 mt-1" id="filename-suffix-long-img">.png/.jpg akan ditambahkan otomatis</p>
+            <div id="download-area" class="hidden">
+                <p class="text-green-400 mb-3">Selesai! 🔥</p>
+                <a id="download-link" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200">
+                    Download Hasil
+                </a>
             </div>
+            <p id="error-message" class="text-red-400 font-medium hidden"></p>
+        </footer>
 
-            <!-- Action Button -->
-            <button id="convert-to-long-img-btn" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-8 hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-              Konversi ke Long Image
-            </button>
-          </div>
-        </div>
-
-        <!-- Panels 4, 5, 6 (Placeholder) -->
-        <div data-panel="merge-pdf" class="tab-panel hidden">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
-            <h2 class="text-2xl font-semibold mb-4">Merge PDF</h2>
-            <p class="text-gray-400">Fitur ini sedang dalam pengembangan ☕. (Ini butuh library `pdf-lib` untuk *true merge* tanpa re-render, beda sama spek awal yg cuma `jsPDF`)</p>
-          </div>
-        </div>
-        <div data-panel="split-pdf" class="tab-panel hidden">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
-            <h2 class="text-2xl font-semibold mb-4">Split PDF</h2>
-            <p class="text-gray-400">Fitur ini sedang dalam pengembangan 🛠️. (Ini juga idealnya pakai `pdf-lib`)</p>
-          </div>
-        </div>
-        <div data-panel="compress-pdf" class="tab-panel hidden">
-          <div class="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
-            <h2 class="text-2xl font-semibold mb-4">Compress PDF</h2>
-            <p class="text-gray-400">Fitur ini sedang dalam pengembangan ⚙️. (Kompresi beneran itu kompleks, kalau pakai `jsPDF` doang artinya kita re-render semua halaman jadi JPG, yg bakal nurunin kualitas teks).</p>
-          </div>
-        </div>
-      </main>
-
-      <!-- Global Status/Loading Area -->
-      <footer id="status-area" class="text-center mt-8 p-4 min-h-[80px]">
-        <div id="loading-indicator" class="hidden flex-col justify-center items-center">
-          <div class="spinner"></div>
-          <p id="loading-text" class="text-gray-300 mt-3 text-sm">Lagi proses, sabar ya...</p>
-        </div>
-        <div id="download-area" class="hidden">
-          <p class="text-green-400 mb-3">Selesai! 🔥</p>
-          <a id="download-link" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200"> Download Hasil </a>
-        </div>
-        <p id="error-message" class="text-red-400 font-medium hidden"></p>
-      </footer>
     </div>
 
     <!-- 4. Main Application Logic -->
     <script type="module">
-      // Alias library
-      const { jsPDF } = window.jspdf;
-      const pdfjsLib = window.pdfjsLib;
+        // Alias library
+        const { jsPDF } = window.jspdf;
+        const pdfjsLib = window.pdfjsLib;
+        const { PDFDocument } = window.PDFLib; // Alias for pdf-lib
 
-      // Set worker path for pdf.js
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+        // Set worker path for pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
-      // --- Global State ---
-      let imageFiles = []; // For Img -> PDF. (UPDATED: { id, file, dataUrl })
-      let pdfFileToImg = null; // For PDF -> Img
-      let pdfFileToLongImg = null; // For PDF -> Long Img
+        // --- Global State ---
+        let imageFiles = []; // For Img -> PDF. { id, file, dataUrl }
+        let pdfFileToImg = null; // For PDF -> Img
+        let pdfFileToLongImg = null; // For PDF -> Long Img
+        let pdfFilesToMerge = []; // For Merge PDF: { id, file }
+        let pdfFileToSplit = null; // For Split PDF
+        let pdfFileToCompress = null; // For Compress PDF
 
-      // --- DOM Elements ---
-      const tabButtons = document.querySelectorAll('.tab-button');
-      const tabPanels = document.querySelectorAll('.tab-panel');
-      const statusArea = document.getElementById('status-area');
-      const loadingIndicator = document.getElementById('loading-indicator');
-      const loadingText = document.getElementById('loading-text');
-      const downloadArea = document.getElementById('download-area');
-      const downloadLink = document.getElementById('download-link');
-      const errorMessage = document.getElementById('error-message');
+        // --- DOM Elements ---
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        const statusArea = document.getElementById('status-area');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const downloadArea = document.getElementById('download-area');
+        const downloadLink = document.getElementById('download-link');
+        const errorMessage = document.getElementById('error-message');
 
-      // --- Helper Functions ---
-
-      /** Menampilkan status loading */
-      function showLoading(message = 'Lagi proses, sabar ya...') {
-        hideStatus();
-        loadingText.textContent = message;
-        loadingIndicator.classList.remove('hidden');
-        loadingIndicator.classList.add('flex');
-        // Disable all convert buttons
-        document.querySelectorAll('button[id^="convert-"]').forEach((btn) => (btn.disabled = true));
-      }
-
-      /** Menyembunyikan status loading */
-      function hideLoading() {
-        loadingIndicator.classList.add('hidden');
-        loadingIndicator.classList.remove('flex');
-        // Enable all convert buttons (yang ada filenya)
-        if (imageFiles.length > 0) document.getElementById('convert-to-pdf-btn').disabled = false;
-        if (pdfFileToImg) document.getElementById('convert-to-img-btn').disabled = false;
-        if (pdfFileToLongImg) document.getElementById('convert-to-long-img-btn').disabled = false;
-      }
-
-      /** Menampilkan link download */
-      function showDownload(blob, filename) {
-        hideLoading();
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.download = filename;
-        downloadArea.classList.remove('hidden');
-      }
-
-      /** Menampilkan pesan error */
-      function showError(message) {
-        hideLoading();
-        errorMessage.textContent = message;
-        errorMessage.classList.remove('hidden');
-      }
-
-      /** Menyembunyikan semua status (loading, download, error) */
-      function hideStatus() {
-        loadingIndicator.classList.add('hidden');
-        downloadArea.classList.add('hidden');
-        errorMessage.classList.add('hidden');
-        if (downloadLink.href) {
-          URL.revokeObjectURL(downloadLink.href);
-          downloadLink.href = '#';
-        }
-      }
-
-      /** Membaca file sebagai Data URL */
-      function readFileAsDataURL(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      }
-
-      /** Membaca file sebagai Array Buffer */
-      function readFileAsArrayBuffer(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsArrayBuffer(file);
-        });
-      }
-
-      /** Parsing rentang halaman (cth: "1-3, 5, 8-10") */
-      function parsePageRanges(rangeStr, maxPages) {
-        if (!rangeStr || rangeStr.trim() === '') {
-          return Array.from({ length: maxPages }, (_, i) => i + 1);
+        // --- Helper Functions ---
+        
+        /** Menampilkan status loading */
+        function showLoading(message = 'Lagi proses, sabar ya...') {
+            hideStatus();
+            loadingText.textContent = message;
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.add('flex');
+            // Disable all convert buttons
+            document.querySelectorAll('button[id^="convert-"], button[id^="merge-"], button[id^="split-"], button[id^="compress-"]').forEach(btn => btn.disabled = true);
         }
 
-        const pages = new Set();
-        const parts = rangeStr.split(',');
+        /** Menyembunyikan status loading */
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+            loadingIndicator.classList.remove('flex');
+            // Enable all convert buttons (yang ada filenya)
+            if (imageFiles.length > 0) document.getElementById('convert-to-pdf-btn').disabled = false;
+            if (pdfFileToImg) document.getElementById('convert-to-img-btn').disabled = false;
+            if (pdfFileToLongImg) document.getElementById('convert-to-long-img-btn').disabled = false;
+            if (pdfFilesToMerge.length > 1) document.getElementById('merge-pdf-btn').disabled = false;
+            if (pdfFileToSplit) document.getElementById('split-pdf-btn').disabled = false;
+            if (pdfFileToCompress) document.getElementById('compress-pdf-btn').disabled = false;
+        }
 
-        for (const part of parts) {
-          const trimmedPart = part.trim();
-          if (trimmedPart.includes('-')) {
-            const [start, end] = trimmedPart.split('-').map(Number);
-            if (!isNaN(start) && !isNaN(end)) {
-              for (let i = Math.max(1, start); i <= Math.min(maxPages, end); i++) {
-                pages.add(i);
-              }
+        /** Menampilkan link download */
+        function showDownload(blob, filename) {
+            hideLoading();
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadArea.classList.remove('hidden');
+        }
+
+        /** Menampilkan pesan error */
+        function showError(message) {
+            hideLoading();
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        /** Menyembunyikan semua status (loading, download, error) */
+        function hideStatus() {
+            loadingIndicator.classList.add('hidden');
+            downloadArea.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            if (downloadLink.href) {
+                URL.revokeObjectURL(downloadLink.href);
+                downloadLink.href = '#';
             }
-          } else {
-            const page = Number(trimmedPart);
-            if (!isNaN(page) && page >= 1 && page <= maxPages) {
-              pages.add(page);
+        }
+
+        /** Membaca file sebagai Data URL */
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        /** Membaca file sebagai Array Buffer */
+        function readFileAsArrayBuffer(file) {
+             return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        /** * Parsing rentang halaman (cth: "1-3, 5, 8-10") 
+         * @returns {number[]} Array of page numbers (1-based index)
+         */
+        function parsePageRanges(rangeStr, maxPages) {
+            if (!rangeStr || rangeStr.trim() === "") {
+                // Kalo kosong, balikin semua halaman
+                return Array.from({ length: maxPages }, (_, i) => i + 1);
             }
-          }
-        }
-        return Array.from(pages).sort((a, b) => a - b);
-      }
-
-      // --- Tab Navigation Logic ---
-      tabButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          const targetPanel = button.dataset.tab;
-          hideStatus();
-          tabButtons.forEach((btn) => {
-            btn.classList.remove('active-tab', 'bg-blue-600', 'text-white');
-            btn.classList.add('bg-gray-700', 'text-gray-300');
-          });
-          button.classList.add('active-tab', 'bg-blue-600', 'text-white');
-          button.classList.remove('bg-gray-700', 'text-gray-300');
-          tabPanels.forEach((panel) => {
-            if (panel.dataset.panel === targetPanel) {
-              panel.classList.remove('hidden');
-            } else {
-              panel.classList.add('hidden');
+            
+            const pages = new Set();
+            const parts = rangeStr.split(',');
+            
+            for (const part of parts) {
+                const trimmedPart = part.trim();
+                if (trimmedPart.includes('-')) {
+                    const [start, end] = trimmedPart.split('-').map(Number);
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = Math.max(1, start); i <= Math.min(maxPages, end); i++) {
+                            pages.add(i);
+                        }
+                    }
+                } else {
+                    const page = Number(trimmedPart);
+                    if (!isNaN(page) && page >= 1 && page <= maxPages) {
+                        pages.add(page);
+                    }
+                }
             }
-          });
-        });
-      });
-
-      // --- ============================ ---
-      // --- Tool 1: Image -> PDF Logic --- (UPDATED)
-      // --- ============================ ---
-      const imgInput = document.getElementById('img-input');
-      const imgDropArea = document.getElementById('img-drop-area');
-      const imgPreviewArea = document.getElementById('img-preview-area');
-      const convertToPdfBtn = document.getElementById('convert-to-pdf-btn'); // (FIXED) This line should no longer error
-      const imgPageSize = document.getElementById('img-page-size');
-      const imgOrientation = document.getElementById('img-orientation');
-
-      /** (NEW) Fungsi untuk menghapus gambar dari antrian */
-      function removeImage(id) {
-        // Hapus dari state
-        imageFiles = imageFiles.filter((f) => f.id !== id);
-
-        // Hapus dari DOM
-        const element = document.getElementById(id);
-        if (element) {
-          element.remove();
+            return Array.from(pages).sort((a, b) => a - b);
         }
 
-        // Update status tombol
-        if (imageFiles.length === 0) {
-          convertToPdfBtn.disabled = true;
-        }
-      }
-
-      /** (UPDATED) Handle file gambar, sekarang nambahin tombol hapus */
-      async function handleImageFiles(files) {
-        hideStatus();
-        imageFiles = []; // Reset
-        imgPreviewArea.innerHTML = ''; // Clear preview
-
-        for (const file of files) {
-          if (!file.type.startsWith('image/')) continue;
-
-          const dataUrl = await readFileAsDataURL(file);
-          const fileId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          imageFiles.push({ id: fileId, file, dataUrl });
-
-          // Render preview
-          const wrapper = document.createElement('div');
-          wrapper.className = 'relative group shadow-lg'; // 'group' penting buat hover
-          wrapper.id = fileId;
-
-          const imgEl = document.createElement('img');
-          imgEl.src = dataUrl;
-          imgEl.className = 'w-full h-32 object-cover rounded-lg';
-
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'absolute top-1.5 right-1.5 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-opacity font-bold text-lg leading-none pb-0.5 md:opacity-0 md:group-hover:opacity-100'; // UPDATED: Selalu keliatan di mobile, hover di desktop
-          deleteBtn.innerHTML = '&times;'; // 'X'
-
-          deleteBtn.onclick = (e) => {
-            e.preventDefault(); // Biar ga trigger label
-            removeImage(fileId);
-          };
-
-          wrapper.appendChild(imgEl);
-          wrapper.appendChild(deleteBtn);
-          imgPreviewArea.appendChild(wrapper);
-        }
-
-        if (imageFiles.length > 0) {
-          convertToPdfBtn.disabled = false;
-        } else {
-          convertToPdfBtn.disabled = true;
-        }
-        // TODO: Add drag-and-drop reordering logic here
-      }
-
-      imgInput.addEventListener('change', (e) => handleImageFiles(e.target.files));
-
-      // Drag & Drop (unchanged)
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-        imgDropArea.addEventListener(
-          eventName,
-          (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          },
-          false
-        );
-      });
-      ['dragenter', 'dragover'].forEach((eventName) => {
-        imgDropArea.addEventListener(eventName, () => imgDropArea.classList.add('drag-over'), false);
-      });
-      ['dragleave', 'drop'].forEach((eventName) => {
-        imgDropArea.addEventListener(eventName, () => imgDropArea.classList.remove('drag-over'), false);
-      });
-      imgDropArea.addEventListener('drop', (e) => handleImageFiles(e.dataTransfer.files), false);
-
-      // (NEW) Event listener buat disable/enable Orientasi
-      imgPageSize.addEventListener('change', () => {
-        if (imgPageSize.value === 'original') {
-          imgOrientation.disabled = true;
-          imgOrientation.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-          imgOrientation.disabled = false;
-          imgOrientation.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-      });
-
-      /** (UPDATED) Logika konversi, sekarang handle "Ukuran Asli" dan "Nama File" */
-      convertToPdfBtn.addEventListener('click', async () => {
-        if (imageFiles.length === 0) return;
-
-        showLoading('Mulai membuat PDF...');
-        try {
-          const pageSize = imgPageSize.value;
-          const orientation = imgOrientation.value;
-          const quality = parseInt(document.getElementById('img-quality').value) / 100;
-
-          let doc; // Deklarasi di luar loop
-
-          // Kompresi JPG ('FAST' itu alias untuk kompresi medium-low)
-          const compression = quality < 0.7 ? 'FAST' : quality < 0.9 ? 'MEDIUM' : 'NONE';
-
-          for (let i = 0; i < imageFiles.length; i++) {
-            showLoading(`Memproses gambar ${i + 1} dari ${imageFiles.length}...`);
-            const imgData = imageFiles[i].dataUrl;
-
-            const img = new Image();
-            img.src = imgData;
-            await new Promise((r) => (img.onload = r));
-
-            if (pageSize === 'original') {
-              // --- LOGIKA UKURAN ASLI ---
-              const imgOrientation = img.width > img.height ? 'l' : 'p';
-              if (i === 0) {
-                doc = new jsPDF({
-                  orientation: imgOrientation,
-                  unit: 'px',
-                  format: [img.width, img.height],
+        // --- Tab Navigation Logic ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetPanel = button.dataset.tab;
+                hideStatus();
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active-tab', 'bg-blue-600', 'text-white');
+                    btn.classList.add('bg-gray-700', 'text-gray-300');
                 });
-              } else {
-                doc.addPage([img.width, img.height], imgOrientation);
-              }
-              doc.addImage(imgData, 'JPEG', 0, 0, img.width, img.height, undefined, compression);
-            } else {
-              // --- LOGIKA FIT TO PAGE (A4, A3, dll) ---
-              if (i === 0) {
-                doc = new jsPDF({
-                  orientation,
-                  unit: 'px',
-                  format: pageSize,
+                button.classList.add('active-tab', 'bg-blue-600', 'text-white');
+                button.classList.remove('bg-gray-700', 'text-gray-300');
+                tabPanels.forEach(panel => {
+                    if (panel.dataset.panel === targetPanel) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
                 });
-              } else {
-                doc.addPage(pageSize, orientation);
-              }
+            });
+        });
 
-              const pageWidth = doc.internal.pageSize.getWidth();
-              const pageHeight = doc.internal.pageSize.getHeight();
-              const ratio = img.width / img.height;
-              const pageRatio = pageWidth / pageHeight;
-              let imgWidth, imgHeight;
+        // --- ============================ ---
+        // --- Tool 1: Image -> PDF Logic ---
+        // --- ============================ ---
+        const imgInput = document.getElementById('img-input');
+        const imgDropArea = document.getElementById('img-drop-area');
+        const imgPreviewArea = document.getElementById('img-preview-area');
+        const convertToPdfBtn = document.getElementById('convert-to-pdf-btn');
+        const imgPageSize = document.getElementById('img-page-size');
+        const imgOrientation = document.getElementById('img-orientation');
 
-              if (ratio > pageRatio) {
-                imgWidth = pageWidth;
-                imgHeight = pageWidth / ratio;
-              } else {
-                imgHeight = pageHeight;
-                imgWidth = pageHeight * ratio;
-              }
-              const x = (pageWidth - imgWidth) / 2;
-              const y = (pageHeight - imgHeight) / 2;
-              doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight, undefined, compression);
+        /** Fungsi untuk menghapus gambar dari antrian */
+        function removeImage(id) {
+            imageFiles = imageFiles.filter(f => f.id !== id);
+            const element = document.getElementById(id);
+            if (element) element.remove();
+            if (imageFiles.length === 0) convertToPdfBtn.disabled = true;
+        }
+        
+        /** Handle file gambar */
+        async function handleImageFiles(files) {
+            hideStatus();
+            imageFiles = []; 
+            imgPreviewArea.innerHTML = ''; 
+            
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                
+                const dataUrl = await readFileAsDataURL(file);
+                const fileId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                imageFiles.push({ id: fileId, file, dataUrl });
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative group shadow-lg";
+                wrapper.id = fileId;
+
+                const imgEl = document.createElement('img');
+                imgEl.src = dataUrl;
+                imgEl.className = "w-full h-32 object-cover rounded-lg";
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = "absolute top-1.5 right-1.5 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-opacity font-bold text-lg leading-none pb-0.5 md:opacity-0 md:group-hover:opacity-100";
+                deleteBtn.innerHTML = "&times;";
+                
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault(); 
+                    removeImage(fileId);
+                };
+
+                wrapper.appendChild(imgEl);
+                wrapper.appendChild(deleteBtn);
+                imgPreviewArea.appendChild(wrapper);
             }
-          }
-
-          // Pastikan doc terbuat (artinya imageFiles > 0)
-          if (doc) {
-            showLoading('Menyimpan PDF...');
-
-            // (UPDATED) Get custom filename
-            const filenameInput = document.getElementById('img-output-filename').value.trim(); // (FIXED) This ID is now correct
-            let finalFilename = filenameInput || 'hasil_konversi';
-
-            // Pastiin .pdf
-            if (!finalFilename.endsWith('.pdf')) {
-              finalFilename += '.pdf';
-            }
-
-            const pdfBlob = doc.output('blob');
-            showDownload(pdfBlob, finalFilename); // Use new filename
-          } else {
-            showError('Tidak ada gambar untuk dikonversi.');
-          }
-        } catch (err) {
-          console.error(err);
-          showError('Gagal konversi gambar: ' + err.message);
-        }
-      });
-
-      // --- ============================= ---
-      // --- Tool 2: PDF -> Image Logic ---
-      // --- ============================= ---
-      const pdfToImgInput = document.getElementById('pdf-to-img-input');
-      const convertToImgBtn = document.getElementById('convert-to-img-btn');
-      const pdfToImgDropArea = document.getElementById('pdf-to-img-drop-area'); // (NEW)
-      const pdfToImgFilenameDisplay = document.getElementById('pdf-to-img-filename-display'); // (NEW)
-
-      /** (NEW) Handle file PDF untuk Panel 2 */
-      function handlePdfFileToImg(file) {
-        hideStatus();
-        if (!file) {
-          pdfFileToImg = null;
-          convertToImgBtn.disabled = true;
-          pdfToImgFilenameDisplay.classList.add('hidden');
-          return;
-        }
-
-        if (file.type !== 'application/pdf') {
-          showError('File harus PDF, bos.');
-          pdfFileToImg = null;
-          convertToImgBtn.disabled = true;
-          pdfToImgFilenameDisplay.classList.add('hidden');
-          return;
-        }
-
-        pdfFileToImg = file;
-        pdfToImgFilenameDisplay.textContent = file.name;
-        pdfToImgFilenameDisplay.classList.remove('hidden');
-        convertToImgBtn.disabled = false;
-      }
-
-      pdfToImgInput.addEventListener('change', (e) => {
-        handlePdfFileToImg(e.target.files[0]);
-      });
-
-      // (NEW) Drag & Drop listeners for PDF -> Img
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-        pdfToImgDropArea.addEventListener(
-          eventName,
-          (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          },
-          false
-        );
-      });
-      ['dragenter', 'dragover'].forEach((eventName) => {
-        pdfToImgDropArea.addEventListener(eventName, () => pdfToImgDropArea.classList.add('drag-over'), false);
-      });
-      ['dragleave', 'drop'].forEach((eventName) => {
-        pdfToImgDropArea.addEventListener(eventName, () => pdfToImgDropArea.classList.remove('drag-over'), false);
-      });
-      pdfToImgDropArea.addEventListener(
-        'drop',
-        (e) => {
-          handlePdfFileToImg(e.dataTransfer.files[0]);
-        },
-        false
-      );
-
-      convertToImgBtn.addEventListener('click', async () => {
-        if (!pdfFileToImg) return;
-
-        showLoading('Membaca file PDF...');
-        try {
-          const arrayBuffer = await readFileAsArrayBuffer(pdfFileToImg);
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-          const rangeStr = document.getElementById('pdf-to-img-pages').value;
-          const format = document.getElementById('pdf-to-img-format').value;
-          const ext = format === 'image/png' ? 'png' : 'jpg';
-          const quality = format === 'image/jpeg' ? 0.9 : undefined;
-          const saveAsZip = document.getElementById('pdf-to-img-zip').checked;
-          const filenameInput = document.getElementById('pdf-to-img-filename').value.trim(); // (NEW)
-
-          const pagesToRender = parsePageRanges(rangeStr, pdf.numPages);
-
-          if (pagesToRender.length === 0) {
-            showError('Rentang halaman tidak valid.');
-            return;
-          }
-
-          const zip = new JSZip();
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          for (let i = 0; i < pagesToRender.length; i++) {
-            const pageNum = pagesToRender[i];
-            showLoading(`Memproses halaman ${pageNum} (${i + 1}/${pagesToRender.length})...`);
-
-            const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 2.0 });
-
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            await page.render({ canvasContext: ctx, viewport }).promise;
-
-            const dataUrl = canvas.toDataURL(format, quality);
-
-            if (saveAsZip) {
-              zip.file(`halaman_${pageNum}.${ext}`, dataUrl.split(',')[1], { base64: true });
+            
+            if (imageFiles.length > 0) {
+                convertToPdfBtn.disabled = false;
             } else {
-              if (pagesToRender.length > 1 && !saveAsZip) {
-                showError('Pilih "Simpan sebagai ZIP" untuk multi-halaman.');
+                convertToPdfBtn.disabled = true;
+            }
+        }
+
+        imgInput.addEventListener('change', (e) => handleImageFiles(e.target.files));
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imgDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            imgDropArea.addEventListener(eventName, () => imgDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            imgDropArea.addEventListener(eventName, () => imgDropArea.classList.remove('drag-over'), false);
+        });
+        imgDropArea.addEventListener('drop', (e) => handleImageFiles(e.dataTransfer.files), false);
+        
+        imgPageSize.addEventListener('change', () => {
+            if (imgPageSize.value === 'original') {
+                imgOrientation.disabled = true;
+                imgOrientation.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                imgOrientation.disabled = false;
+                imgOrientation.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        /** Logika konversi Img -> PDF */
+        convertToPdfBtn.addEventListener('click', async () => {
+            if (imageFiles.length === 0) return;
+
+            showLoading('Mulai membuat PDF...');
+            try {
+                const pageSize = imgPageSize.value;
+                const orientation = imgOrientation.value;
+                const quality = parseInt(document.getElementById('img-quality').value) / 100;
+                let doc; 
+                const compression = quality < 0.7 ? 'FAST' : (quality < 0.9 ? 'MEDIUM' : 'NONE');
+
+                for (let i = 0; i < imageFiles.length; i++) {
+                    showLoading(`Memproses gambar ${i + 1} dari ${imageFiles.length}...`);
+                    const imgData = imageFiles[i].dataUrl;
+                    
+                    const img = new Image();
+                    img.src = imgData;
+                    await new Promise(r => img.onload = r);
+
+                    if (pageSize === 'original') {
+                        const imgOrientation = img.width > img.height ? 'l' : 'p';
+                        if (i === 0) {
+                            doc = new jsPDF({ 
+                                orientation: imgOrientation, 
+                                unit: 'px', 
+                                format: [img.width, img.height]
+                            });
+                        } else {
+                            doc.addPage([img.width, img.height], imgOrientation);
+                        }
+                        doc.addImage(imgData, 'JPEG', 0, 0, img.width, img.height, undefined, compression);
+                        
+                    } else {
+                        if (i === 0) {
+                            doc = new jsPDF({ 
+                                orientation, 
+                                unit: 'px', 
+                                format: pageSize
+                            });
+                        } else {
+                            doc.addPage(pageSize, orientation);
+                        }
+                        
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        const pageHeight = doc.internal.pageSize.getHeight();
+                        const ratio = img.width / img.height;
+                        const pageRatio = pageWidth / pageHeight;
+                        let imgWidth, imgHeight;
+                        
+                        if (ratio > pageRatio) {
+                            imgWidth = pageWidth;
+                            imgHeight = pageWidth / ratio;
+                        } else {
+                            imgHeight = pageHeight;
+                            imgWidth = pageHeight * ratio;
+                        }
+                        const x = (pageWidth - imgWidth) / 2;
+                        const y = (pageHeight - imgHeight) / 2;
+                        doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight, undefined, compression);
+                    }
+                }
+                
+                if (doc) {
+                    showLoading('Menyimpan PDF...');
+                    const filenameInput = document.getElementById('img-output-filename').value.trim(); 
+                    let finalFilename = filenameInput || 'hasil_konversi';
+                    if (!finalFilename.endsWith('.pdf')) finalFilename += '.pdf';
+                    const pdfBlob = doc.output('blob');
+                    showDownload(pdfBlob, finalFilename);
+                } else {
+                    showError('Tidak ada gambar untuk dikonversi.');
+                }
+                
+            } catch (err) {
+                console.error(err);
+                showError('Gagal konversi gambar: ' + err.message);
+            }
+        });
+        
+        // --- ============================ ---
+        // --- Tool 2: PDF -> Image Logic ---
+        // --- ============================ ---
+        const pdfToImgInput = document.getElementById('pdf-to-img-input');
+        const convertToImgBtn = document.getElementById('convert-to-img-btn');
+        const pdfToImgDropArea = document.getElementById('pdf-to-img-drop-area'); 
+        const pdfToImgFilenameDisplay = document.getElementById('pdf-to-img-filename-display'); 
+        const pdfToImgClearBtn = document.getElementById('pdf-to-img-clear-btn');
+
+        /** Handle file PDF untuk Panel 2 */
+        function handlePdfFileToImg(file) {
+            hideStatus();
+            if (!file) {
+                pdfFileToImg = null;
+                convertToImgBtn.disabled = true;
+                pdfToImgFilenameDisplay.textContent = '';
+                pdfToImgClearBtn.classList.add('hidden');
+                pdfToImgInput.value = null;
                 return;
-              }
-              const blob = await (await fetch(dataUrl)).blob();
-
-              // (UPDATED) Handle custom filename for single image
-              let finalFilename = filenameInput || `halaman_${pageNum}`;
-              if (!finalFilename.toLowerCase().endsWith(`.${ext}`)) {
-                finalFilename += `.${ext}`;
-              }
-              showDownload(blob, finalFilename);
-              return;
             }
-          }
-
-          if (saveAsZip) {
-            showLoading('Membuat file ZIP...');
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-            // (UPDATED) Handle custom filename for ZIP
-            let zipFilename = filenameInput || pdfFileToImg.name.replace(/\.pdf$/i, '');
-            if (!zipFilename.toLowerCase().endsWith('.zip')) {
-              zipFilename += '.zip';
+            if (file.type !== 'application/pdf') {
+                showError('File harus PDF, bos.');
+                pdfFileToImg = null;
+                convertToImgBtn.disabled = true;
+                pdfToImgFilenameDisplay.textContent = '';
+                pdfToImgClearBtn.classList.add('hidden');
+                return;
             }
-            showDownload(zipBlob, zipFilename);
-          }
-        } catch (err) {
-          console.error(err);
-          showError('Gagal konversi PDF ke Image: ' + err.message);
-        }
-      });
-
-      // --- ================================= ---
-      // --- Tool 3: PDF -> Long Image Logic --- (UPDATED)
-      // --- ================================= ---
-      const pdfToLongImgInput = document.getElementById('pdf-to-long-img-input');
-      const convertToLongImgBtn = document.getElementById('convert-to-long-img-btn');
-      const pdfToLongImgDropArea = document.getElementById('pdf-to-long-img-drop-area'); // (NEW)
-      const pdfToLongImgFilenameDisplay = document.getElementById('pdf-to-long-img-filename-display'); // (NEW)
-
-      /** (NEW) Handle file PDF untuk Panel 3 */
-      function handlePdfFileToLongImg(file) {
-        hideStatus();
-        if (!file) {
-          pdfFileToLongImg = null;
-          convertToLongImgBtn.disabled = true;
-          pdfToLongImgFilenameDisplay.classList.add('hidden');
-          return;
+            pdfFileToImg = file;
+            pdfToImgFilenameDisplay.textContent = file.name;
+            pdfToImgClearBtn.classList.remove('hidden');
+            convertToImgBtn.disabled = false;
         }
 
-        if (file.type !== 'application/pdf') {
-          showError('File harus PDF, bos.');
-          pdfFileToLongImg = null;
-          convertToLongImgBtn.disabled = true;
-          pdfToLongImgFilenameDisplay.classList.add('hidden');
-          return;
+        pdfToImgInput.addEventListener('change', (e) => handlePdfFileToImg(e.target.files[0]));
+        pdfToImgClearBtn.addEventListener('click', () => handlePdfFileToImg(null));
+        
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            pdfToImgDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            pdfToImgDropArea.addEventListener(eventName, () => pdfToImgDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            pdfToImgDropArea.addEventListener(eventName, () => pdfToImgDropArea.classList.remove('drag-over'), false);
+        });
+        pdfToImgDropArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            handlePdfFileToImg(file);
+            if(file) pdfToImgInput.files = e.dataTransfer.files;
+        }, false);
+
+        /** Logika konversi PDF -> Image */
+        convertToImgBtn.addEventListener('click', async () => {
+            if (!pdfFileToImg) return;
+            
+            showLoading('Membaca file PDF...');
+            try {
+                const arrayBuffer = await readFileAsArrayBuffer(pdfFileToImg);
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                const rangeStr = document.getElementById('pdf-to-img-pages').value;
+                const format = document.getElementById('pdf-to-img-format').value;
+                const ext = format === 'image/png' ? 'png' : 'jpg';
+                const quality = format === 'image/jpeg' ? 0.9 : undefined;
+                const saveAsZip = document.getElementById('pdf-to-img-zip').checked;
+                const filenameInput = document.getElementById('pdf-to-img-filename').value.trim();
+                
+                const pagesToRender = parsePageRanges(rangeStr, pdf.numPages);
+                
+                if (pagesToRender.length === 0) {
+                    showError('Rentang halaman tidak valid.');
+                    return;
+                }
+                
+                const zip = new JSZip();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                for (let i = 0; i < pagesToRender.length; i++) {
+                    const pageNum = pagesToRender[i];
+                    showLoading(`Memproses halaman ${pageNum} (${i+1}/${pagesToRender.length})...`);
+                    
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+                    const dataUrl = canvas.toDataURL(format, quality);
+                    
+                    if (saveAsZip) {
+                        zip.file(`halaman_${pageNum}.${ext}`, dataUrl.split(',')[1], { base64: true });
+                    } else {
+                        if (pagesToRender.length > 1 && !saveAsZip) {
+                            showError('Pilih "Simpan sebagai ZIP" untuk multi-halaman.');
+                            return;
+                        }
+                        const blob = await (await fetch(dataUrl)).blob();
+                        let finalFilename = filenameInput || `halaman_${pageNum}`;
+                        if (!finalFilename.toLowerCase().endsWith(`.${ext}`)) finalFilename += `.${ext}`;
+                        showDownload(blob, finalFilename);
+                        return; 
+                    }
+                }
+                
+                if (saveAsZip) {
+                    showLoading('Membuat file ZIP...');
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    let zipFilename = filenameInput || pdfFileToImg.name.replace(/\.pdf$/i, '');
+                    if (!zipFilename.toLowerCase().endsWith('.zip')) zipFilename += '.zip';
+                    showDownload(zipBlob, zipFilename);
+                }
+                
+            } catch (err) {
+                console.error(err);
+                showError('Gagal konversi PDF ke Image: ' + err.message);
+            }
+        });
+        
+        // --- ============================ ---
+        // --- Tool 3: PDF -> Long Image Logic ---
+        // --- ============================ ---
+        const pdfToLongImgInput = document.getElementById('pdf-to-long-img-input');
+        const convertToLongImgBtn = document.getElementById('convert-to-long-img-btn');
+        const pdfToLongImgDropArea = document.getElementById('pdf-to-long-img-drop-area'); 
+        const pdfToLongImgFilenameDisplay = document.getElementById('pdf-to-long-img-filename-display');
+        const pdfToLongImgClearBtn = document.getElementById('pdf-to-long-img-clear-btn');
+
+        /** Handle file PDF untuk Panel 3 */
+        function handlePdfFileToLongImg(file) {
+            hideStatus();
+            if (!file) {
+                pdfFileToLongImg = null;
+                convertToLongImgBtn.disabled = true;
+                pdfToLongImgFilenameDisplay.textContent = '';
+                pdfToLongImgClearBtn.classList.add('hidden');
+                pdfToLongImgInput.value = null;
+                return;
+            }
+            if (file.type !== 'application/pdf') {
+                showError('File harus PDF, bos.');
+                pdfFileToLongImg = null;
+                convertToLongImgBtn.disabled = true;
+                pdfToLongImgFilenameDisplay.textContent = '';
+                pdfToLongImgClearBtn.classList.add('hidden');
+                return;
+            }
+            pdfFileToLongImg = file;
+            pdfToLongImgFilenameDisplay.textContent = file.name;
+            pdfToLongImgClearBtn.classList.remove('hidden');
+            convertToLongImgBtn.disabled = false;
         }
 
-        pdfFileToLongImg = file;
-        pdfToLongImgFilenameDisplay.textContent = file.name;
-        pdfToLongImgFilenameDisplay.classList.remove('hidden');
-        convertToLongImgBtn.disabled = false;
-      }
+        pdfToLongImgInput.addEventListener('change', (e) => handlePdfFileToLongImg(e.target.files[0]));
+        pdfToLongImgClearBtn.addEventListener('click', () => handlePdfFileToLongImg(null));
+        
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            pdfToLongImgDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            pdfToLongImgDropArea.addEventListener(eventName, () => pdfToLongImgDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            pdfToLongImgDropArea.addEventListener(eventName, () => pdfToLongImgDropArea.classList.remove('drag-over'), false);
+        });
+        pdfToLongImgDropArea.addEventListener('drop', (e) => {
+             const file = e.dataTransfer.files[0];
+            handlePdfFileToLongImg(file);
+            if(file) pdfToLongImgInput.files = e.dataTransfer.files;
+        }, false);
+        
+        /** Logika konversi PDF -> Long Image */
+        convertToLongImgBtn.addEventListener('click', async () => {
+            if (!pdfFileToLongImg) return;
+            
+            showLoading('Membaca file PDF...');
+            try {
+                const arrayBuffer = await readFileAsArrayBuffer(pdfFileToLongImg);
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                const format = document.getElementById('long-img-format').value;
+                const scale = parseFloat(document.getElementById('long-img-scale').value) || 1.5;
+                const ext = format === 'image/png' ? 'png' : 'jpg';
+                const quality = format === 'image/jpeg' ? 0.9 : undefined;
+                const filenameInput = document.getElementById('long-img-filename').value.trim();
+                
+                const mainCanvas = document.createElement('canvas');
+                const mainCtx = mainCanvas.getContext('2d');
+                let totalHeight = 0;
+                let maxWidth = 0;
+                const pagePromises = [];
 
-      pdfToLongImgInput.addEventListener('change', (e) => {
-        handlePdfFileToLongImg(e.target.files[0]);
-      });
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    showLoading(`Menganalisa halaman ${i}/${pdf.numPages}...`);
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale });
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = viewport.width;
+                    tempCanvas.height = viewport.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    totalHeight += viewport.height;
+                    maxWidth = Math.max(maxWidth, viewport.width);
+                    pagePromises.push(page.render({ canvasContext: tempCtx, viewport }).promise.then(() => tempCanvas));
+                }
+                
+                const pageCanvases = await Promise.all(pagePromises);
 
-      // (NEW) Drag & Drop listeners for PDF -> Long Img
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-        pdfToLongImgDropArea.addEventListener(
-          eventName,
-          (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          },
-          false
-        );
-      });
-      ['dragenter', 'dragover'].forEach((eventName) => {
-        pdfToLongImgDropArea.addEventListener(eventName, () => pdfToLongImgDropArea.classList.add('drag-over'), false);
-      });
-      ['dragleave', 'drop'].forEach((eventName) => {
-        pdfToLongImgDropArea.addEventListener(eventName, () => pdfToLongImgDropArea.classList.remove('drag-over'), false);
-      });
-      pdfToLongImgDropArea.addEventListener(
-        'drop',
-        (e) => {
-          handlePdfFileToLongImg(e.dataTransfer.files[0]);
-        },
-        false
-      );
+                mainCanvas.width = maxWidth;
+                mainCanvas.height = totalHeight;
+                mainCtx.fillStyle = '#FFFFFF';
+                mainCtx.fillRect(0, 0, maxWidth, totalHeight);
 
-      convertToLongImgBtn.addEventListener('click', async () => {
-        if (!pdfFileToLongImg) return;
+                showLoading('Menggabungkan semua halaman...');
+                let yOffset = 0;
+                for (const canvas of pageCanvases) {
+                    mainCtx.drawImage(canvas, 0, yOffset);
+                    yOffset += canvas.height;
+                }
+                
+                showLoading('Membuat gambar final...');
+                mainCanvas.toBlob((blob) => {
+                     let finalFilename = filenameInput || pdfFileToLongImg.name.replace(/\.pdf$/i, '') + '_long';
+                     if (!finalFilename.toLowerCase().endsWith(`.${ext}`)) finalFilename += `.${ext}`;
+                     showDownload(blob, finalFilename);
+                }, format, quality);
 
-        showLoading('Membaca file PDF...');
-        try {
-          const arrayBuffer = await readFileAsArrayBuffer(pdfFileToLongImg);
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            } catch (err) {
+                console.error(err);
+                showError('Gagal konversi PDF ke Long Image: ' + err.message);
+            }
+        });
+        
+        // --- ============================ ---
+        // --- Tool 4: Merge PDF Logic ---
+        // --- ============================ ---
+        const mergeInput = document.getElementById('merge-input');
+        const mergeDropArea = document.getElementById('merge-drop-area');
+        const mergePreviewArea = document.getElementById('merge-preview-area');
+        const mergePdfBtn = document.getElementById('merge-pdf-btn');
 
-          const format = document.getElementById('long-img-format').value;
-          const scale = parseFloat(document.getElementById('long-img-scale').value) || 1.5;
-          const ext = format === 'image/png' ? 'png' : 'jpg';
-          const quality = format === 'image/jpeg' ? 0.9 : undefined;
-          const filenameInput = document.getElementById('long-img-filename').value.trim(); // (NEW)
-
-          const mainCanvas = document.createElement('canvas');
-          const mainCtx = mainCanvas.getContext('2d');
-
-          let totalHeight = 0;
-          let maxWidth = 0;
-          const pagePromises = [];
-
-          for (let i = 1; i <= pdf.numPages; i++) {
-            showLoading(`Menganalisa halaman ${i}/${pdf.numPages}...`);
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale });
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = viewport.width;
-            tempCanvas.height = viewport.height;
-            const tempCtx = tempCanvas.getContext('2d');
-
-            totalHeight += viewport.height;
-            maxWidth = Math.max(maxWidth, viewport.width);
-
-            pagePromises.push(page.render({ canvasContext: tempCtx, viewport }).promise.then(() => tempCanvas));
-          }
-
-          const pageCanvases = await Promise.all(pagePromises);
-
-          mainCanvas.width = maxWidth;
-          mainCanvas.height = totalHeight;
-          mainCtx.fillStyle = '#FFFFFF';
-          mainCtx.fillRect(0, 0, maxWidth, totalHeight);
-
-          showLoading('Menggabungkan semua halaman...');
-          let yOffset = 0;
-          for (const canvas of pageCanvases) {
-            mainCtx.drawImage(canvas, 0, yOffset);
-            yOffset += canvas.height;
-          }
-
-          showLoading('Membuat gambar final...');
-          mainCanvas.toBlob(
-            (blob) => {
-              // (UPDATED) Handle custom filename
-              let finalFilename = filenameInput || pdfFileToLongImg.name.replace(/\.pdf$/i, '') + '_long';
-              if (!finalFilename.toLowerCase().endsWith(`.${ext}`)) {
-                finalFilename += `.${ext}`;
-              }
-              showDownload(blob, finalFilename);
-            },
-            format,
-            quality
-          );
-        } catch (err) {
-          console.error(err);
-          showError('Gagal konversi PDF ke Long Image: ' + err.message);
+        /** Fungsi untuk menghapus PDF dari antrian merge */
+        function removePdfFileToMerge(id) {
+            pdfFilesToMerge = pdfFilesToMerge.filter(f => f.id !== id);
+            const element = document.getElementById(id);
+            if (element) element.remove();
+            mergePdfBtn.disabled = pdfFilesToMerge.length < 2;
         }
-      });
 
-      // --- ================================== ---
-      // --- Tool 4, 5, 6 (Merge, Split, Compress) ---
-      // --- ================================== ---
-      /* CATATAN: Masih sama kayak sebelumnya, butuh `pdf-lib` buat hasil yg beneran bagus. */
+        /** Handle file PDF untuk Panel 4 */
+        async function handlePdfFilesToMerge(files) {
+            hideStatus();
+            let newFilesAdded = false;
+            for (const file of files) {
+                if (file.type !== 'application/pdf') continue;
+                
+                const fileId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                pdfFilesToMerge.push({ id: fileId, file });
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative group bg-gray-700 p-3 rounded-lg flex justify-between items-center shadow";
+                wrapper.id = fileId;
+
+                const textWrapper = document.createElement('div');
+                textWrapper.className = "flex items-center space-x-3 truncate";
+                
+                const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                icon.setAttribute("class", "h-6 w-6 text-red-400 flex-shrink-0");
+                icon.setAttribute("fill", "none");
+                icon.setAttribute("viewBox", "0 0 24 24");
+                icon.setAttribute("stroke", "currentColor");
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>`;
+                
+                const fileName = document.createElement('span');
+                fileName.textContent = file.name;
+                fileName.className = "text-gray-200 truncate";
+                
+                textWrapper.appendChild(icon);
+                textWrapper.appendChild(fileName);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = "flex-shrink-0 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center transition-opacity font-bold text-lg leading-none pb-0.5 md:opacity-0 md:group-hover:opacity-100";
+                deleteBtn.innerHTML = "&times;";
+                
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault(); 
+                    removePdfFileToMerge(fileId);
+                };
+
+                wrapper.appendChild(textWrapper);
+                wrapper.appendChild(deleteBtn);
+                mergePreviewArea.appendChild(wrapper);
+                newFilesAdded = true;
+            }
+            
+            if (newFilesAdded && pdfFilesToMerge.length >= 2) {
+                mergePdfBtn.disabled = false;
+            } else if (pdfFilesToMerge.length < 2) {
+                 mergePdfBtn.disabled = true;
+            }
+            
+            const dataTransfer = new DataTransfer();
+            pdfFilesToMerge.forEach(f => dataTransfer.items.add(f.file));
+            mergeInput.files = dataTransfer.files;
+        }
+
+        mergeInput.addEventListener('change', (e) => handlePdfFilesToMerge(e.target.files));
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            mergeDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            mergeDropArea.addEventListener(eventName, () => mergeDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            mergeDropArea.addEventListener(eventName, () => mergeDropArea.classList.remove('drag-over'), false);
+        });
+        mergeDropArea.addEventListener('drop', (e) => handlePdfFilesToMerge(e.dataTransfer.files), false);
+        
+        /** Logika merge PDF */
+        mergePdfBtn.addEventListener('click', async () => {
+            if (pdfFilesToMerge.length < 2) {
+                showError("Butuh minimal 2 file PDF buat digabung, bos.");
+                return;
+            }
+
+            showLoading('Mulai menggabungkan PDF...');
+            try {
+                const mergedPdf = await PDFDocument.create();
+                for (let i = 0; i < pdfFilesToMerge.length; i++) {
+                    const { file } = pdfFilesToMerge[i];
+                    showLoading(`Memproses file ${i + 1} dari ${pdfFilesToMerge.length} (${file.name})...`);
+                    
+                    const arrayBuffer = await readFileAsArrayBuffer(file);
+                    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true }); 
+                    
+                    const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                showLoading('Menyimpan PDF gabungan...');
+                const pdfBytes = await mergedPdf.save();
+                const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                
+                const filenameInput = document.getElementById('merge-output-filename').value.trim();
+                let finalFilename = filenameInput || 'hasil_gabungan';
+                if (!finalFilename.endsWith('.pdf')) finalFilename += '.pdf';
+
+                showDownload(pdfBlob, finalFilename);
+            } catch (err) {
+                console.error(err);
+                showError('Gagal gabung PDF: ' + err.message);
+            }
+        });
+
+        // --- ============================ ---
+        // --- Tool 5: Split PDF Logic ---
+        // --- ============================ ---
+        const splitInput = document.getElementById('split-input');
+        const splitDropArea = document.getElementById('split-drop-area');
+        const splitFilenameDisplay = document.getElementById('split-filename-display');
+        const splitPdfBtn = document.getElementById('split-pdf-btn');
+        const splitClearBtn = document.getElementById('split-clear-btn');
+        
+        /** Handle file PDF untuk Panel 5 (Split) */
+        function handlePdfFileToSplit(file) {
+            hideStatus();
+            if (!file) {
+                pdfFileToSplit = null;
+                splitPdfBtn.disabled = true;
+                splitFilenameDisplay.textContent = '';
+                splitClearBtn.classList.add('hidden');
+                splitInput.value = null;
+                return;
+            }
+            if (file.type !== 'application/pdf') {
+                showError('File harus PDF, bos.');
+                pdfFileToSplit = null;
+                splitPdfBtn.disabled = true;
+                splitFilenameDisplay.textContent = '';
+                splitClearBtn.classList.add('hidden');
+                return;
+            }
+            pdfFileToSplit = file;
+            splitFilenameDisplay.textContent = file.name;
+            splitClearBtn.classList.remove('hidden');
+            splitPdfBtn.disabled = false;
+        }
+
+        splitInput.addEventListener('change', (e) => handlePdfFileToSplit(e.target.files[0]));
+        splitClearBtn.addEventListener('click', () => handlePdfFileToSplit(null));
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            splitDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            splitDropArea.addEventListener(eventName, () => splitDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            splitDropArea.addEventListener(eventName, () => splitDropArea.classList.remove('drag-over'), false);
+        });
+        splitDropArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            handlePdfFileToSplit(file);
+            if(file) splitInput.files = e.dataTransfer.files;
+        }, false);
+
+        /** Logika split PDF */
+        splitPdfBtn.addEventListener('click', async () => {
+            if (!pdfFileToSplit) return;
+            
+            const rangeStr = document.getElementById('split-pages').value.trim();
+            if (!rangeStr) {
+                showError("Masukin dulu rentang halamannya, bos. Cth: 1-5");
+                return;
+            }
+
+            showLoading('Membaca file PDF...');
+            try {
+                const arrayBuffer = await readFileAsArrayBuffer(pdfFileToSplit);
+                const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+
+                const pagesToSplit = parsePageRanges(rangeStr, pdfDoc.getPageCount());
+                
+                if (pagesToSplit.length === 0) {
+                    showError('Rentang halaman tidak valid atau tidak ditemukan.');
+                    return;
+                }
+                
+                // (PENTING) pdf-lib pake 0-based index, jadi kita konversi
+                const pagesToKeepIndices = pagesToSplit.map(p => p - 1); 
+
+                showLoading('Membuat file PDF baru...');
+                const newPdf = await PDFDocument.create();
+                
+                const copiedPages = await newPdf.copyPages(pdfDoc, pagesToKeepIndices);
+                copiedPages.forEach((page) => {
+                    newPdf.addPage(page);
+                });
+
+                showLoading('Menyimpan PDF hasil split...');
+                const pdfBytes = await newPdf.save();
+                const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                
+                const filenameInput = document.getElementById('split-output-filename').value.trim();
+                let finalFilename = filenameInput || pdfFileToSplit.name.replace(/\.pdf$/i, '_split');
+                if (!finalFilename.endsWith('.pdf')) finalFilename += '.pdf';
+
+                showDownload(pdfBlob, finalFilename);
+
+            } catch (err) {
+                console.error(err);
+                showError('Gagal split PDF: ' + err.message);
+            }
+        });
+        
+        // --- ============================ ---
+        // --- Tool 6: Compress PDF Logic --- (UPDATED)
+        // --- ============================ ---
+        const compressInput = document.getElementById('compress-input');
+        const compressDropArea = document.getElementById('compress-drop-area');
+        const compressFilenameDisplay = document.getElementById('compress-filename-display');
+        const compressPdfBtn = document.getElementById('compress-pdf-btn');
+        const compressQuality = document.getElementById('compress-quality');
+        const compressClearBtn = document.getElementById('compress-clear-btn');
+        const compressCustomSettings = document.getElementById('compress-custom-settings');
+        
+        /** Handle file PDF untuk Panel 6 (Compress) */
+        function handlePdfFileToCompress(file) {
+            hideStatus();
+            if (!file) {
+                pdfFileToCompress = null;
+                compressPdfBtn.disabled = true;
+                compressFilenameDisplay.textContent = '';
+                compressClearBtn.classList.add('hidden');
+                compressInput.value = null;
+                return;
+            }
+            if (file.type !== 'application/pdf') {
+                showError('File harus PDF, bos.');
+                pdfFileToCompress = null;
+                compressPdfBtn.disabled = true;
+                compressFilenameDisplay.textContent = '';
+                compressClearBtn.classList.add('hidden');
+                return;
+            }
+            pdfFileToCompress = file;
+            compressFilenameDisplay.textContent = file.name;
+            compressClearBtn.classList.remove('hidden');
+            compressPdfBtn.disabled = false;
+        }
+
+        compressInput.addEventListener('change', (e) => handlePdfFileToCompress(e.target.files[0]));
+        compressClearBtn.addEventListener('click', () => handlePdfFileToCompress(null));
+
+        // Drag & Drop listeners for Compress PDF
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            compressDropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            compressDropArea.addEventListener(eventName, () => compressDropArea.classList.add('drag-over'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            compressDropArea.addEventListener(eventName, () => compressDropArea.classList.remove('drag-over'), false);
+        });
+        compressDropArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            handlePdfFileToCompress(file);
+            if(file) compressInput.files = e.dataTransfer.files;
+        }, false);
+        
+        // (NEW) Show/hide custom settings
+        compressQuality.addEventListener('change', () => {
+            if (compressQuality.value === 'custom') {
+                compressCustomSettings.classList.remove('hidden');
+            } else {
+                compressCustomSettings.classList.add('hidden');
+            }
+        });
+
+        /** (UPDATED) Logika compress PDF (re-render) */
+        compressPdfBtn.addEventListener('click', async () => {
+            if (!pdfFileToCompress) return;
+
+            showLoading('Membaca file PDF...');
+            try {
+                // (UPDATED) Tweak settings for better balance
+                const qualityMode = compressQuality.value;
+                let quality;
+                
+                if (qualityMode === 'custom') {
+                    const scale = parseFloat(document.getElementById('compress-scale').value) || 0.8;
+                    const jpgQuality = (parseInt(document.getElementById('compress-jpg-quality').value) || 50) / 100;
+                    quality = { scale: scale, jpgQuality: jpgQuality };
+                } else {
+                    const qualitySettings = {
+                        low: { scale: 0.8, jpgQuality: 0.5 },    // ~58 DPI
+                        medium: { scale: 1.0, jpgQuality: 0.7 }, // ~72 DPI
+                        high: { scale: 1.5, jpgQuality: 0.8 }    // ~100 DPI
+                    };
+                    quality = qualitySettings[qualityMode] || qualitySettings.low;
+                }
+                
+                const arrayBuffer = await readFileAsArrayBuffer(pdfFileToCompress);
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let compressedPdfDoc = null; // Ini akan jadi jsPDF doc
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    showLoading(`Mengompres halaman ${i} dari ${pdf.numPages}...`);
+                    
+                    const page = await pdf.getPage(i);
+                    
+                    // Dapetin ukuran halaman asli (dalam px, 72 DPI)
+                    const originalViewport = page.getViewport({ scale: 1.0 });
+                    const pageWidth = originalViewport.width;
+                    const pageHeight = originalViewport.height;
+                    const orientation = pageWidth > pageHeight ? 'l' : 'p';
+                    
+                    // Render di canvas dengan skala kompresi
+                    const scaledViewport = page.getViewport({ scale: quality.scale });
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    
+                    await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+                    
+                    // Ubah jadi JPG terkompresi
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality.jpgQuality);
+                    
+                    // Masukin ke PDF baru
+                    if (i === 1) {
+                        compressedPdfDoc = new jsPDF({
+                            orientation,
+                            unit: 'px',
+                            format: [pageWidth, pageHeight]
+                        });
+                    } else {
+                        compressedPdfDoc.addPage([pageWidth, pageHeight], orientation);
+                    }
+                    
+                    // Tambahin gambar ke halaman, 'NONE' karena JPG-nya udah dikompres
+                    compressedPdfDoc.addImage(dataUrl, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'NONE'); 
+                }
+
+                if (compressedPdfDoc) {
+                    showLoading('Menyimpan PDF hasil kompresi...');
+                    const pdfBlob = compressedPdfDoc.output('blob');
+                    
+                    const filenameInput = document.getElementById('compress-output-filename').value.trim();
+                    let finalFilename = filenameInput || pdfFileToCompress.name.replace(/\.pdf$/i, '_compressed');
+                    if (!finalFilename.endsWith('.pdf')) finalFilename += '.pdf';
+
+                    showDownload(pdfBlob, finalFilename);
+                } else {
+                    showError("PDF ini kayaknya kosong, bos.");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError('Gagal kompres PDF: ' + err.message);
+            }
+        });
+        
     </script>
-  </body>
+
+</body>
 </html>
+
